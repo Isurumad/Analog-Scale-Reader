@@ -3,8 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 
-image_main = cv2.imread('C:/Users/S.S.Aludeniya/Desktop/project/images/initnew.jpg')
-image_read = cv2.imread('C:/Users/S.S.Aludeniya/Desktop/project/images/read_crop.jpg')
 cap = cv2.VideoCapture('ori.3gp')
 
 def draw_label(img, text, pos, bg_color):
@@ -22,6 +20,7 @@ def draw_label(img, text, pos, bg_color):
     cv2.rectangle(img, pos, (end_x, end_y), bg_color, thickness)
     cv2.putText(img, text, pos, font_face, scale, color, 1, cv2.LINE_AA)
 
+
 ##filter object by color
 def filterImage(image):
     image = cv2.resize(image,(600,336))
@@ -33,9 +32,9 @@ def filterImage(image):
         
     return image,mask,res
 
-def getSkeleton(mask):
-    size = np.size(mask)
-    skel = np.zeros(mask.size,np.uint8)
+def getSkeleton(image,mask):
+    size = np.size(image)
+    skel = np.zeros(image.size,np.uint8)
     skel  = cv2.resize(skel,(600,336))
 
     element = cv2.getStructuringElement(cv2.MORPH_CROSS,(3,3))
@@ -47,7 +46,7 @@ def getSkeleton(mask):
         temp = cv2.subtract(mask,temp)
         skel = cv2.bitwise_or(skel,temp)
         mask = eroded.copy()
-        cv2.waitKey(1000) 
+        cv2.waitKey(2) 
         zeros = size - cv2.countNonZero(mask)
         if zeros==size:
             done = True
@@ -65,6 +64,7 @@ def drawLines(image,color):
 
     return image,edges
 
+
 def erodeImage(image,iterations):
     erode = cv2.erode(image,None,iterations=iterations)
     return erode
@@ -72,28 +72,10 @@ def erodeImage(image,iterations):
 def dilateImage(image,iterations):
     dilate = cv2.dilate(image,None,iterations=iterations)
     return dilate
-
-def calAngleInit(image):
-    b,g,r= cv2.split(image)
-    g = np.array(g)
-    z = 0
-    index=[0,220,0,300]
-    z=0
-    for x in range(len(b[300])):
-        if(b[300][x]== 255):
-            index[0]=x
-            break
-    z=0
-    for x in range(len(b[300])):
-        if(b[300][x]== 255):
-            index[2]=x
-            break
-    angle = math.degrees(math.atan(abs((index[3]-index[1])/(index[0]-index[2]))))
-    return angle
     
 def calAngleRead(image):
-    b,g,r= cv2.split(image)
-    b = np.array(b)
+    b,g,r = cv2.split(image)
+    r=np.array(r)
     z = 0
     index=[0,160,0,260]
     for x in range(len(r[160])):
@@ -122,16 +104,16 @@ def calAngleRead(image):
         
 
 def calReading(main_angle):
-    ##take frame of video
-
     while(1):
         ret,frame = cap.read()
-        image,mask,res_read=filterImage(frame)
-        edges_read,edges = drawLines(res_read,[0,0,255])
+        image,mask,filter_image=filterImage(frame)
+        image_edge,edges = drawLines(filter_image,[0,0,255])
         
-        res_read = erodeImage(res_read,2)
-        res_read = dilateImage(res_read,1)
-    
+        res_read = erodeImage(image_edge,2)
+        
+        skel = getSkeleton(res_read,mask)
+        line_image = drawRefLine(res_read)
+        
         read_angle = calAngleRead(res_read)
         angle = (180.0-(main_angle+read_angle))
         scale_angle = math.ceil((500.0/(180-(main_angle*2)))*(angle))
@@ -142,31 +124,24 @@ def calReading(main_angle):
 
         draw_label(image,str(scale_angle),(50,75), (25,25,25))
         cv2.imshow('Image',image)
-        cv2.imshow('Frame',edges)
+        cv2.imshow('Frame',line_image)
+        cv2.imshow('Skeleton',skel)
 
-        k=cv2.waitKey(1) & 0xFF
+        k=cv2.waitKey(3) & 0xFF
         if k == 27:
             break
     cv2.destroyAllWindows()
 
 def drawRefLine(image):
     b,g,r = cv2.split(image)
-    g = np.array(g)
     for x in range(len(g[160])):
         g[160][x]=255
 
     for x in range(len(g[260])):
         g[260][x]=255
-
     image = cv2.merge([b,g,r])
     return image
 def test():
-##    mask_main,res_main = filterImage(image_main)
-##    edges_main = drawLines(res_main,[255,0,0])
-##    res_main = dilateImage(res_main,1)
-##    res_main = erodeImage(res_main,4)
-    
-##    calReading(res_main,calAngleInit(res_main))
     while(1):
         res,frame = cap.read()
         mask,res = filterImage(frame)
@@ -178,9 +153,6 @@ def test():
         if k == 27:
             break
     cv2.destroyAllWindows()
-
-   
-    
 def main():
     calReading(55.02)
     
