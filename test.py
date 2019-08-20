@@ -5,22 +5,6 @@ import math
 
 cap = cv2.VideoCapture('ori.3gp')
 
-def draw_label(img, text, pos, bg_color):
-    font_face = cv2.FONT_HERSHEY_SIMPLEX
-    scale = 2.0
-    color = (0,255,0)
-    thickness = cv2.FILLED
-    margin = 10
-
-    txt_size = cv2.getTextSize(text, font_face, scale, thickness)
-
-    end_x = pos[0] + txt_size[0][0] + margin
-    end_y = pos[1] - txt_size[0][1] - margin
-
-    cv2.rectangle(img, pos, (end_x, end_y), bg_color, thickness)
-    cv2.putText(img, text, pos, font_face, scale, color, 1, cv2.LINE_AA)
-
-
 ##filter object by color
 def filterImage(image):
     image = cv2.resize(image,(600,336))
@@ -90,57 +74,83 @@ def calAngleRead(image):
 
     if (index[0]>index[2]):
         if((index[0]-index[2])!=0):
-            angle  =math.degrees(math.atan(abs((index[3]-index[1])/(index[0]-index[2]))))
+            angle  =math.degrees(math.atan(abs((index[3]-index[1])/(index[2]-index[0]))))
             return angle
         else:
             return 1.0
     else:
         if((index[0]-index[2])!=0):
-            angle=math.degrees(math.atan(abs((index[3]-index[1])/(index[0]-index[2]))))
+            angle=math.degrees(math.atan(abs((index[3]-index[1])/(index[2]-index[0]))))
             angle = 180.0 - angle 
             return angle
         else:
             return 1.0
         
+def draw_label(img, text, pos, bg_color):
+    font_face = cv2.FONT_HERSHEY_SIMPLEX
+    scale = 2.0
+    color = (0,255,0)
+    thickness = cv2.FILLED
+    margin = 10
 
+    txt_size = cv2.getTextSize(text, font_face, scale, thickness)
+
+    end_x = pos[0] + txt_size[0][0] + margin
+    end_y = pos[1] - txt_size[0][1] - margin
+
+    cv2.rectangle(img, pos, (end_x, end_y), bg_color, thickness)
+    cv2.putText(img, text, pos, font_face, scale, color, 1, cv2.LINE_AA)
+    
 def calReading(main_angle):
-    while(1):
+    ret = True
+    while(ret):
         ret,frame = cap.read()
+    
         image,mask,filter_image=filterImage(frame)
         image_edge,edges = drawLines(filter_image,[0,0,255])
-        
+            
         res_read = erodeImage(image_edge,2)
-        
+            
         skel = getSkeleton(res_read,mask)
         line_image = drawRefLine(res_read)
-        
+            
         read_angle = calAngleRead(res_read)
         angle = (180.0-(main_angle+read_angle))
-        scale_angle = math.ceil((500.0/(180-(main_angle*2)))*(angle))
-      
-        
-        if(scale_angle <= 0):
-            scale_angle = 0.0 
+        reading = 0
+        if angle <=13:
+            reading = math.ceil((100.0/(13.58))*(angle))
+        elif angle <= 29:
+            reading = (math.ceil((100.0/(16.09))*(angle-13)))+100
+        elif angle <= 47:
+            reading = (math.ceil((100.0/(17.57))*(angle-29)))+200
+        elif angle <= 60:
+            reading = (math.ceil((100.0/(13.82))*(angle-47)))+300
+        else:
+            reading = (math.ceil((100.0/(9.7))*(angle-59)))+400
+            
+        if(reading <= 0):
+            reading = 0.0 
 
-        draw_label(image,str(scale_angle),(50,75), (25,25,25))
+        draw_label(image,str(reading),(50,75), (25,25,25))
         cv2.imshow('Image',image)
         cv2.imshow('Frame',line_image)
         cv2.imshow('Skeleton',skel)
 
-        k=cv2.waitKey(3) & 0xFF
+        k=cv2.waitKey(10) & 0xFF
         if k == 27:
             break
     cv2.destroyAllWindows()
 
 def drawRefLine(image):
     b,g,r = cv2.split(image)
-    for x in range(len(g[160])):
-        g[160][x]=255
+    for x in range(len(g[150])):
+        g[150][x]=255
 
     for x in range(len(g[260])):
         g[260][x]=255
     image = cv2.merge([b,g,r])
     return image
+
 def test():
     while(1):
         res,frame = cap.read()
@@ -153,8 +163,9 @@ def test():
         if k == 27:
             break
     cv2.destroyAllWindows()
+    
 def main():
-    calReading(55.02)
+    calReading(56.2)
     
 if __name__ == '__main__':
     main()
