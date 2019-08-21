@@ -77,14 +77,14 @@ def calAngleRead(image):
             angle  =math.degrees(math.atan(abs((index[3]-index[1])/(index[2]-index[0]))))
             return angle
         else:
-            return 1.0
+            return 90.0
     else:
         if((index[0]-index[2])!=0):
             angle=math.degrees(math.atan(abs((index[3]-index[1])/(index[2]-index[0]))))
             angle = 180.0 - angle 
             return angle
         else:
-            return 1.0
+            return 90.0
         
 def draw_label(img, text, pos, bg_color):
     font_face = cv2.FONT_HERSHEY_SIMPLEX
@@ -117,16 +117,16 @@ def calReading(main_angle):
         read_angle = calAngleRead(res_read)
         angle = (180.0-(main_angle+read_angle))
         reading = 0
-        if angle <=13:
+        if angle <=13.6:
             reading = math.ceil((100.0/(13.58))*(angle))
-        elif angle <= 29:
-            reading = (math.ceil((100.0/(16.09))*(angle-13)))+100
-        elif angle <= 47:
-            reading = (math.ceil((100.0/(17.57))*(angle-29)))+200
-        elif angle <= 60:
-            reading = (math.ceil((100.0/(13.82))*(angle-47)))+300
+        elif angle <= 29.6:
+            reading = (math.ceil((100.0/(16.09))*(angle-13.6)))+100
+        elif angle <= 47.24:
+            reading = (math.ceil((100.0/(17.57))*(angle-29.6)))+200
+        elif angle <= 61.06:
+            reading = (math.ceil((100.0/(13.82))*(angle-47.24)))+300
         else:
-            reading = (math.ceil((100.0/(9.7))*(angle-59)))+400
+            reading = (math.ceil((100.0/(9.7))*(angle-60)))+400
             
         if(reading <= 0):
             reading = 0.0 
@@ -165,7 +165,7 @@ def test():
     cv2.destroyAllWindows()
     
 def main():
-    calReading(56.2)
+    calReading(55.2)
     
 if __name__ == '__main__':
     main()
